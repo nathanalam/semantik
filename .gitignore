@@ -12,3 +12,15 @@ wheels/
 # Files
 pdfs
 storage
+
+# PyInstaller
+build/
+dist/
+*.dmg
+*.zip
+*.tar.gz
+*.exe
+*.app
+
+# But keep our spec file
+!pdf_search.spec

@@ -5,9 +5,17 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9, <4.0"
 dependencies = [
+    "accelerate>=1.10.1",
     "langchain>=0.3.27",
     "langchain-community>=0.3.31",
     "llama-index>=0.14.4",
     "llama-index-embeddings-huggingface>=0.6.1",
     "llama-index-embeddings-langchain>=0.4.1",
+    "llama-index-llms-huggingface>=0.6.1",
+    "pillow>=11.3.0",
+    "pyinstaller>=6.16.0",
+    "pymupdf>=1.26.5",
+    "streamlit>=1.50.0",
+    "torch>=2.8.0",
+    "transformers>=4.57.0",
 ]
