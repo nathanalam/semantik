@@ -1,4 +1,4 @@
-# Ragdoll
+# Semantik
 
 A pure vector-based semantic search system for PDF documents. Quickly find relevant passages in your PDFs using natural language queries, ranked by similarity.
 
@@ -19,9 +19,9 @@ A pure vector-based semantic search system for PDF documents. Quickly find relev
 
 If you received a pre-built application:
 
-**macOS**: Double-click `Ragdoll.app`  
-**Windows**: Run `Ragdoll.exe`  
-**Linux**: Run `./Ragdoll` from terminal
+**macOS**: Double-click `Semantik.app`  
+**Windows**: Run `Semantik.exe`  
+**Linux**: Run `./Semantik` from terminal
 
 ### For Developers
 
@@ -84,14 +84,14 @@ After creating your index with `uv run python main.py`:
 
 **Manual macOS Build:**
 ```bash
-# The Ragdoll.spec file includes PDFs and storage automatically
-uv run streamlit-desktop-app build app.py --name Ragdoll --pyinstaller-options --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext --windowed --icon ./logo.icns
-cp -r pdfs dist/Ragdoll.app/Contents/Frameworks/
-cp -r storage dist/Ragdoll.app/Contents/Frameworks/
+# The Semantik.spec file includes PDFs and storage automatically
+uv run streamlit-desktop-app build app.py --name Semantik --pyinstaller-options --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext --windowed --icon ./logo.icns
+cp -r pdfs dist/Semantik.app/Contents/Frameworks/
+cp -r storage dist/Semantik.app/Contents/Frameworks/
 ```
 
 **Output:**
-- macOS: `dist/Ragdoll.app`
+- macOS: `dist/Semantik.app`
 
 ## How It Works
 
@@ -148,7 +148,7 @@ All managed via `uv`:
 
 ### Resource Bundling
 
-The macOS build uses a customized `Ragdoll.spec` file that automatically bundles:
+The macOS build uses a customized `Semantik.spec` file that automatically bundles:
 - All PDFs from the `pdfs/` directory
 - The search index from the `storage/` directory
 - All required Python dependencies and models

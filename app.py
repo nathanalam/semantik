@@ -14,7 +14,7 @@ import io
 import re
 
 # Page config
-st.set_page_config(page_title="PDF Semantic Search", layout="wide")
+st.set_page_config(page_title="Semantik", layout="wide")
 
 # Determine the base path for bundled resources
 if getattr(sys, 'frozen', False):
@@ -211,7 +211,7 @@ def extract_search_terms(query, response_text):
 
 
 # Main UI
-st.title("📚 PDF Semantic Search")
+st.title("Semantik")
 st.markdown("Search your PDF documents using semantic similarity. Results are ranked by relevance.")
 
 # Load index
@@ -240,7 +240,7 @@ with st.sidebar:
     """)
 
 # Query input
-query = st.text_input("Enter your search query:", placeholder="e.g., par value, accrual accounting, revenue recognition")
+query = st.text_input("Enter your search query:")
 
 if st.button("Search", type="primary") and query:
     with st.spinner("Searching..."):
