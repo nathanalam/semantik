@@ -1,17 +1,30 @@
+"""
+Read-only version of the PDF search app for distribution.
+This version expects the index to already exist and does not create new indices.
+"""
 import streamlit as st
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
-from langchain.embeddings.huggingface import HuggingFaceBgeEmbeddings
+from llama_index.core import StorageContext, load_index_from_storage
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from llama_index.core import Settings
 import os
+import sys
 import fitz  # PyMuPDF
 from PIL import Image
 import io
 import re
 
 # Page config
-st.set_page_config(page_title="PDF RAG Search", layout="wide")
+st.set_page_config(page_title="PDF Semantic Search", layout="wide")
 
-PERSIST_DIR = "./storage"
+# Determine the base path for bundled resources
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    BASE_PATH = sys._MEIPASS
+else:
+    # Running as script
+    BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+PERSIST_DIR = os.path.join(BASE_PATH, "storage")
 
 # Initialize session state
 if 'index' not in st.session_state:
@@ -21,25 +34,38 @@ if 'retriever' not in st.session_state:
 
 
 @st.cache_resource
-def load_or_create_index():
-    """Load existing index or create new one"""
+def load_index():
+    """Load existing index (read-only mode)"""
     # Configure settings
     Settings.embed_model = HuggingFaceBgeEmbeddings(model_name="BAAI/bge-base-en-v1.5")
     Settings.llm = None  # No LLM needed for pure retrieval
     
     if not os.path.exists(PERSIST_DIR):
-        with st.spinner("Creating new index from PDFs... This may take a minute..."):
-            documents = SimpleDirectoryReader("pdfs").load_data()
-            index = VectorStoreIndex.from_documents(documents)
-            index.storage_context.persist(persist_dir=PERSIST_DIR)
-        st.success("Index created and saved!")
-    else:
-        with st.spinner("Loading index from disk..."):
+        st.error(f"""
+        ### ⚠️ Index Not Found
+        
+        The search index was not found at: `{PERSIST_DIR}`
+        
+        This application requires a pre-built index to function.
+        Please ensure the index was included in the distribution.
+        """)
+        st.stop()
+    
+    try:
+        with st.spinner("Loading search index..."):
             storage_context = StorageContext.from_defaults(persist_dir=PERSIST_DIR)
             index = load_index_from_storage(storage_context)
-        st.success("Index loaded!")
-    
-    return index
+        st.success("✅ Search index loaded successfully!")
+        return index
+    except Exception as e:
+        st.error(f"""
+        ### ⚠️ Error Loading Index
+        
+        Failed to load the search index: {str(e)}
+        
+        The index files may be corrupted or incompatible.
+        """)
+        st.stop()
 
 
 def find_text_in_pdf(pdf_path, search_text):
@@ -77,6 +103,15 @@ def extract_pdf_references_from_nodes(nodes):
             score = node.score if hasattr(node, 'score') else None
             
             if not file_path:
+                continue
+            
+            # Convert to absolute path if running as executable
+            if not os.path.isabs(file_path):
+                file_path = os.path.join(BASE_PATH, file_path)
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                st.warning(f"PDF file not found: {file_path}")
                 continue
                 
             try:
@@ -181,7 +216,7 @@ st.markdown("Search your PDF documents using semantic similarity. Results are ra
 
 # Load index
 if st.session_state.index is None:
-    st.session_state.index = load_or_create_index()
+    st.session_state.index = load_index()
     st.session_state.retriever = st.session_state.index.as_retriever(similarity_top_k=5)
 
 # Sidebar - Number of results
@@ -192,6 +227,17 @@ with st.sidebar:
     # Update retriever if top_k changes
     if st.session_state.retriever is None or st.session_state.retriever.similarity_top_k != top_k:
         st.session_state.retriever = st.session_state.index.as_retriever(similarity_top_k=top_k)
+    
+    st.markdown("---")
+    st.markdown("### 📖 About")
+    st.markdown("""
+    This application uses semantic search to find relevant passages in PDF documents.
+    
+    **Built with:**
+    - LlamaIndex for vector retrieval
+    - BGE embeddings
+    - Streamlit for UI
+    """)
 
 # Query input
 query = st.text_input("Enter your search query:", placeholder="e.g., par value, accrual accounting, revenue recognition")
@@ -252,6 +298,4 @@ if st.button("Search", type="primary") and query:
                 st.warning("Retrieved passages but could not process them.")
         else:
             st.info("No relevant passages found. Try a different search query.")
-
-
 

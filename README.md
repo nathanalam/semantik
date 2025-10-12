@@ -1,4 +1,4 @@
-# PDF Semantic Search
+# Ragdoll
 
 A pure vector-based semantic search system for PDF documents. Quickly find relevant passages in your PDFs using natural language queries, ranked by similarity.
 
@@ -19,9 +19,9 @@ A pure vector-based semantic search system for PDF documents. Quickly find relev
 
 If you received a pre-built application:
 
-**macOS**: Double-click `PDFSearch.app`  
-**Windows**: Run `PDFSearch.exe`  
-**Linux**: Run `./PDFSearch` from terminal
+**macOS**: Double-click `Ragdoll.app`  
+**Windows**: Run `Ragdoll.exe`  
+**Linux**: Run `./Ragdoll` from terminal
 
 ### For Developers
 
@@ -32,9 +32,9 @@ If you received a pre-built application:
 
 2. **Add your PDFs** to the `pdfs/` directory
 
-3. **Run the app** to generate the index:
+3. **Generate the index** to generate the index:
    ```bash
-   uv run streamlit run app.py
+   uv run main.py
    ```
 
 ## Usage
@@ -80,19 +80,18 @@ Want to create a standalone app? See **[PACKAGING.md](PACKAGING.md)** for comple
 
 ### Quick Build
 
-After creating your index:
+After creating your index with `uv run python main.py`:
 
-**macOS/Linux:**
+**Manual macOS Build:**
 ```bash
-./build.sh
+# The Ragdoll.spec file includes PDFs and storage automatically
+uv run streamlit-desktop-app build app.py --name Ragdoll --pyinstaller-options --hidden-import=tiktoken_ext.openai_public --hidden-import=tiktoken_ext --windowed --icon ./logo.icns
+cp -r pdfs dist/Ragdoll.app/Contents/Frameworks/
+cp -r storage dist/Ragdoll.app/Contents/Frameworks/
 ```
 
-**Windows:**
-```cmd
-build.bat
-```
-
-Output: `dist/PDFSearch.app` (macOS) or `dist/PDFSearch/` (Windows/Linux)
+**Output:**
+- macOS: `dist/Ragdoll.app`
 
 ## How It Works
 
@@ -112,23 +111,10 @@ If you add, remove, or modify PDFs:
 rm -rf ./storage
 ```
 
-Then restart the application to rebuild the index. See [PACKAGING.md](PACKAGING.md) for details.
-
-## Project Structure
-
+Then re-run the application to rebuild the index.
 ```
-ragdoll/
-├── app.py                 # Development web app (can create index)
-├── app_readonly.py        # Production app (read-only, for distribution)
-├── main.py               # CLI version
-├── pdf_search.spec       # PyInstaller configuration
-├── build.sh              # Build script (macOS/Linux)
-├── build.bat             # Build script (Windows)
-├── pdfs/                 # Your PDF documents
-├── storage/              # Generated search index (created on first run)
-├── README.md             # This file
-├── PACKAGING.md          # Complete packaging guide
-└── pyproject.toml        # Dependencies
+```bash
+uv run main.py
 ```
 
 ## Technical Details
@@ -159,6 +145,15 @@ All managed via `uv`:
 - ✅ Fast and efficient - suitable for large document collections
 - ✅ Self-contained executables include Python runtime, models, PDFs, and index
 - ✅ Works completely offline once built
+
+### Resource Bundling
+
+The macOS build uses a customized `Ragdoll.spec` file that automatically bundles:
+- All PDFs from the `pdfs/` directory
+- The search index from the `storage/` directory
+- All required Python dependencies and models
+
+When the app runs, it uses PyInstaller's `sys._MEIPASS` to locate these resources, making the app fully self-contained. No external dependencies needed!
 
 ## Documentation
 

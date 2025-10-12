@@ -16,6 +16,7 @@ dependencies = [
     "pyinstaller>=6.16.0",
     "pymupdf>=1.26.5",
     "streamlit>=1.50.0",
+    "streamlit-desktop-app>=0.3.4",
     "torch>=2.8.0",
     "transformers>=4.57.0",
 ]
