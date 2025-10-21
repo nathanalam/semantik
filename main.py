@@ -6,7 +6,7 @@ import os
 
 PERSIST_DIR = "./storage"
 
-Settings.embed_model = HuggingFaceBgeEmbeddings(model_name="BAAI/bge-base-en-v1.5")
+Settings.embed_model = HuggingFaceBgeEmbeddings(model_name="Qwen/Qwen2.5-3B-Instruct")
 Settings.llm = None
 Settings.chunk_size = 512
 Settings.chunk_overlap = 50
