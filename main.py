@@ -6,7 +6,9 @@ import os
 
 PERSIST_DIR = "./storage"
 
-Settings.embed_model = HuggingFaceBgeEmbeddings(model_name="Qwen/Qwen2.5-3B-Instruct")
+Settings.embed_model = HuggingFaceBgeEmbeddings(
+    model_name="google/embeddinggemma-300m", model_kwargs={"device": "cuda"}
+)
 Settings.llm = None
 Settings.chunk_size = 512
 Settings.chunk_overlap = 50

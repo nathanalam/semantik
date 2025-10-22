@@ -39,7 +39,7 @@ def load_index():
     """Load existing index (read-only mode)"""
     # Configure settings
     Settings.embed_model = HuggingFaceBgeEmbeddings(
-        model_name="Qwen/Qwen2.5-3B-Instruct"
+        model_name="google/embeddinggemma-300m", model_kwargs={"device": "cuda"}
     )
     Settings.llm = None  # No LLM needed for pure retrieval
 
