@@ -3289,6 +3289,7 @@ dependencies = [
     { name = "pymupdf" },
     { name = "streamlit" },
     { name = "streamlit-desktop-app" },
+    { name = "streamlit-pdf-viewer" },
     { name = "torch", version = "2.8.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "torch", version = "2.8.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "(python_full_version < '3.10' and sys_platform == 'linux') or (python_full_version < '3.10' and sys_platform == 'win32')" },
     { name = "torch", version = "2.9.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "(python_full_version >= '3.10' and sys_platform == 'linux') or (python_full_version >= '3.10' and sys_platform == 'win32')" },
@@ -3309,6 +3310,7 @@ requires-dist = [
     { name = "pymupdf", specifier = ">=1.26.5" },
     { name = "streamlit", specifier = ">=1.50.0" },
     { name = "streamlit-desktop-app", specifier = ">=0.3.4" },
+    { name = "streamlit-pdf-viewer", specifier = ">=0.0.26" },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32'", specifier = ">=2.8.0" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=2.8.0", index = "https://download.pytorch.org/whl/cu128" },
     { name = "transformers", specifier = ">=4.57.0" },
@@ -4114,6 +4116,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c1/e8/48b8fe5407c9621a6bfe13d5c5cb657ba8559aeb576268706037d17c1cbf/streamlit_desktop_app-0.3.4.tar.gz", hash = "sha256:b8b9d62ff42fb0670bc14b161625009149b836389d60f809089fd4eb1df8799c", size = 13065, upload-time = "2024-12-14T07:54:06.012Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/35/3e/716be0a71f8f9ba72e20b32a3cf18d5b773014c919217c4f7aab7f1d6cfb/streamlit_desktop_app-0.3.4-py3-none-any.whl", hash = "sha256:5bd5d914666bda8590128095b953615c7b6a90d42d0ad42c0e797bfc8c820922", size = 13723, upload-time = "2024-12-14T07:54:03.325Z" },
+]
+
+[[package]]
+name = "streamlit-pdf-viewer"
+version = "0.0.26"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "streamlit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a8/86/19070a89e0140ec3744908cfee660d9f5a0498f7eeaeb916006222f64598/streamlit_pdf_viewer-0.0.26.tar.gz", hash = "sha256:360560b04b01f4805dccbece16e649077e2983a753102c4c95338d8c5234a7d2", size = 2556416, upload-time = "2025-06-23T20:53:49.039Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/c6/f9309b16cd987c61f3144489fdae57d6692f24e272880b65d57600e6ae36/streamlit_pdf_viewer-0.0.26-py3-none-any.whl", hash = "sha256:d6fcc9b1bb0d79e07d3c3506b5467bf79b9c3aada15ffa052e9bf3b913df33aa", size = 2598801, upload-time = "2025-06-23T20:53:47.562Z" },
 ]
 
 [[package]]

@@ -22,3 +22,9 @@ dist/
 *.exe
 *.app
 *.spec
+*.png
+*.icns
+
+# Scripts
+*.bat
+*.sh

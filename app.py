@@ -1,6 +1,5 @@
 """
-Read-only version of the PDF search app for distribution.
-This version expects the index to already exist and does not create new indices.
+PDF Semantic Search Viewer
 """
 
 import streamlit as st
@@ -10,12 +9,11 @@ from llama_index.core import Settings
 import os
 import sys
 import fitz  # PyMuPDF
-from PIL import Image
-import io
 import re
+from streamlit_pdf_viewer import pdf_viewer
 
 # Page config
-st.set_page_config(page_title="Semantik", layout="wide")
+st.set_page_config(page_title="Semantik PDF Viewer", layout="wide")
 
 # Determine the base path for bundled resources
 if getattr(sys, "frozen", False):
@@ -33,13 +31,29 @@ if "index" not in st.session_state:
 if "retriever" not in st.session_state:
     st.session_state.retriever = None
 
+# Add JavaScript for Ctrl+F to focus the search input
+st.html("""
+<script>
+document.addEventListener('keydown', function(event) {
+    if (event.ctrlKey && event.key === 'f') {
+        event.preventDefault();
+        const inputs = document.querySelectorAll('input[type="text"]');
+        if (inputs.length > 0) {
+            inputs[0].focus();
+        }
+    }
+});
+</script>
+""")
+
 
 @st.cache_resource
 def load_index():
     """Load existing index (read-only mode)"""
     # Configure settings
     Settings.embed_model = HuggingFaceBgeEmbeddings(
-        model_name="google/embeddinggemma-300m", model_kwargs={"device": "cuda"}
+        model_name="ibm-granite/granite-embedding-278m-multilingual",
+        model_kwargs={"device": "cuda"},
     )
     Settings.llm = None  # No LLM needed for pure retrieval
 
@@ -69,26 +83,6 @@ def load_index():
         The index files may be corrupted or incompatible.
         """)
         st.stop()
-
-
-def find_text_in_pdf(pdf_path, search_text):
-    """Search for text in PDF and return page numbers where it's found"""
-    try:
-        doc = fitz.open(pdf_path)
-        pages_found = []
-        # Take first 50 chars of search text as sample
-        sample = search_text[:50].strip()
-
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            text = page.get_text()
-            if sample in text:
-                pages_found.append(page_num + 1)  # Convert to 1-indexed
-
-        doc.close()
-        return pages_found
-    except Exception:
-        return []
 
 
 def extract_pdf_references_from_nodes(nodes):
@@ -156,50 +150,11 @@ def extract_pdf_references_from_nodes(nodes):
     return references
 
 
-def highlight_text_in_pdf(pdf_path, page_num, search_terms):
-    """Render a PDF page with highlighted search terms"""
-    doc = None
-    try:
-        doc = fitz.open(pdf_path)
-        # Check if page number is valid (pages are 0-indexed internally)
-        if page_num < 1 or page_num - 1 >= len(doc):
-            num_pages = len(doc)
-            if doc:
-                doc.close()
-            return (
-                None,
-                f"Page {page_num} out of range (document has {num_pages} pages)",
-            )
-
-        page = doc[page_num - 1]  # Convert to 0-indexed
-
-        # Try to highlight search terms
-        try:
-            for term in search_terms:
-                # Search for text instances
-                text_instances = page.search_for(term)
-                for inst in text_instances:
-                    # Add yellow highlight
-                    highlight = page.add_highlight_annot(inst)
-                    highlight.set_colors(stroke=[1, 1, 0])  # Yellow
-                    highlight.update()
-        except Exception as highlight_error:
-            # If highlighting fails, just log it and continue to render without highlights
-            st.warning(
-                f"Could not highlight text: {highlight_error}. Rendering page without highlights."
-            )
-
-        # Render page to image
-        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
-        img_data = pix.tobytes("png")
-        img = Image.open(io.BytesIO(img_data))
-
-        doc.close()
-        return img, None
-    except Exception as e:
-        if doc:
-            doc.close()
-        return None, str(e)
+@st.cache_data
+def load_pdf_bytes(pdf_path):
+    """Load PDF as bytes for the viewer"""
+    with open(pdf_path, "rb") as f:
+        return f.read()
 
 
 def extract_search_terms(query, response_text):
@@ -240,22 +195,65 @@ def extract_search_terms(query, response_text):
     return list(terms)
 
 
+def find_text_in_pdf(pdf_path, search_text):
+    """Search for text in PDF and return page numbers where it's found"""
+    try:
+        doc = fitz.open(pdf_path)
+        pages_found = []
+        # Take first 50 chars of search text as sample
+        sample = search_text[:50].strip()
+
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            text = page.get_text()
+            if sample in text:
+                pages_found.append(page_num + 1)  # Convert to 1-indexed
+
+        doc.close()
+        return pages_found
+    except Exception:
+        return []
+
+
+def get_page_text(pdf_path, page_num):
+    """Extract full text from a specific page for copyable display"""
+    try:
+        doc = fitz.open(pdf_path)
+        page = doc[page_num - 1]  # Convert to 0-indexed
+        text = page.get_text()
+        doc.close()
+        return text
+    except Exception as e:
+        return f"Error extracting text: {e}"
+
+
 # Main UI
-st.title("Semantik")
+st.title("Semantik PDF Viewer")
 st.markdown(
-    "Search your PDF documents using semantic similarity. Results are ranked by relevance."
+    "Search your PDF documents using semantic similarity. Results show relevant pages with highlights."
 )
+
+# Path to the PDF
+pdf_path_dir = os.path.join(BASE_PATH, "pdfs")
+pdf_files = os.listdir(pdf_path_dir)
+pdf_path = os.path.join(pdf_path_dir, pdf_files[0])
+
+if not os.path.exists(pdf_path):
+    st.error("PDF file not found.")
+    st.stop()
 
 # Load index
 if st.session_state.index is None:
     st.session_state.index = load_index()
-    st.session_state.retriever = st.session_state.index.as_retriever(similarity_top_k=5)
+    st.session_state.retriever = st.session_state.index.as_retriever(
+        similarity_top_k=10
+    )
 
 # Sidebar - Number of results
 with st.sidebar:
     st.header("⚙️ Settings")
     top_k = st.slider(
-        "Number of results to retrieve", min_value=1, max_value=10, value=5
+        "Number of results to retrieve", min_value=1, max_value=20, value=10
     )
 
     # Update retriever if top_k changes
@@ -267,24 +265,28 @@ with st.sidebar:
             similarity_top_k=top_k
         )
 
-    st.markdown("---")
-    st.markdown("### 📖 About")
-    st.markdown("""
-    This application uses semantic search to find relevant passages in PDF documents.
 
-    **Built with:**
-    - LlamaIndex for vector retrieval
-    - BGE embeddings
-    - Streamlit for UI
-    """)
+# Initialize session state for search query
+if "search_query" not in st.session_state:
+    st.session_state.search_query = ""
 
-# Query input
-query = st.text_input("Enter your search query:")
+# Search input bar that looks like CTRL+F
+search_query = st.text_input(
+    "Search in PDF",
+    placeholder="Enter text to find (Ctrl+F to focus)",
+    key="search_input",
+    value=st.session_state.search_query,
+)
 
-if st.button("Search", type="primary") and query:
+# Find pages to display
+# Load PDF bytes
+pdf_bytes = load_pdf_bytes(pdf_path)
+
+if search_query and st.button("Search", type="primary"):
+    st.session_state.search_query = search_query
     with st.spinner("Searching..."):
         # Retrieve relevant nodes using semantic search
-        nodes = st.session_state.retriever.retrieve(query)
+        nodes = st.session_state.retriever.retrieve(search_query)
 
         if nodes:
             st.success(f"Found {len(nodes)} relevant passages")
@@ -294,54 +296,59 @@ if st.button("Search", type="primary") and query:
 
             if references:
                 # Extract search terms for highlighting
-                search_terms = extract_search_terms(query, "")
+                search_terms = extract_search_terms(search_query, "")
 
-                # Display each reference
-                for i, ref in enumerate(references):
-                    pdf_path = ref["file_path"]
-                    page_num = ref["page_num"]
-                    filename = os.path.basename(pdf_path)
-                    text_content = ref.get("text", "")
-                    score = ref.get("score")
+                # Sort references by score descending
+                sorted_references = sorted(
+                    references, key=lambda r: r.get("score", 0), reverse=True
+                )
 
-                    # Create title with score if available
-                    title = f"📖 {filename} - Page {page_num}"
-                    if score is not None:
-                        title += f" (Relevance: {score:.3f})"
-                    if "original_page_label" in ref:
-                        title += f" [doc page {ref['original_page_label']}]"
+                # Group references by page
+                from collections import defaultdict
 
-                    with st.expander(title, expanded=(i == 0)):
-                        # Show relevance score
-                        if score is not None:
-                            st.metric("Relevance Score", f"{score:.4f}")
+                page_to_refs = defaultdict(list)
+                for ref in sorted_references:
+                    page_to_refs[ref["page_num"]].append(ref)
 
-                        st.markdown(f"**File:** `{filename}`")
-                        st.markdown(f"**Page:** {page_num}")
+                # Get pages sorted by max score per page
+                page_scores = {
+                    page: max(ref["score"] for ref in refs)
+                    for page, refs in page_to_refs.items()
+                }
+                sorted_pages = sorted(page_scores, key=page_scores.get, reverse=True)
 
-                        if "original_page_label" in ref:
-                            st.info(
-                                f"Note: Document internally numbered as page {ref['original_page_label']}, but found content on PDF page {page_num}"
+                # Interweave: for each page in order of significance, show passages then the page render and full text
+                for page_num in sorted_pages:
+                    with st.expander(
+                        f"Page {page_num} - Matches & View", expanded=True
+                    ):
+                        # Show matching passages for this page
+                        for ref in sorted(
+                            page_to_refs[page_num],
+                            key=lambda r: r["score"],
+                            reverse=True,
+                        ):
+                            st.markdown(f"**Match (Score: {ref['score']:.3f})**")
+                            st.text_area(
+                                "",
+                                ref.get("text", ""),
+                                height=100,
+                                disabled=True,
+                                key=f"text_{page_num}_{hash(ref.get('text', ''))}",
                             )
 
-                        # Show retrieved text content
-                        st.markdown("**Retrieved Text:**")
-                        st.text_area(
-                            "", text_content, height=150, disabled=True, key=f"text_{i}"
+                        # Show the PDF page
+                        pdf_viewer(
+                            pdf_bytes, pages_to_render=[page_num], render_text=True
                         )
-
-                        # Render PDF with highlights
-                        st.markdown("**PDF Page:**")
-                        img, error = highlight_text_in_pdf(
-                            pdf_path, page_num, search_terms
-                        )
-                        if img:
-                            st.image(img, use_container_width=True)
-                        else:
-                            st.error(
-                                f"Could not render page {page_num} from {filename}: {error}"
-                            )
             else:
                 st.warning("Retrieved passages but could not process them.")
+                # Show all pages if no references
+                pdf_viewer(pdf_bytes, render_text=True)
         else:
             st.info("No relevant passages found. Try a different search query.")
+            # Show all pages
+            pdf_viewer(pdf_bytes, render_text=True)
+else:
+    # Show all pages without search
+    pdf_viewer(pdf_bytes, render_text=True)
